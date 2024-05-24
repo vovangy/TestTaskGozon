@@ -31,5 +31,5 @@ type CommentsBlockRequest struct {
 
 type CommentTree struct {
 	Comment CommentCreateResponse
-	Replies []CommentTree
+	Replies []*CommentTree
 }

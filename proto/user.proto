@@ -7,7 +7,7 @@ option go_package = "./internal/users/delivery/grpc/gen/;gen";
 service User {
   rpc SignUp(SignInUpRequest) returns (SignUpInResponse) {}
   rpc Login(SignInUpRequest) returns (SignUpInResponse) {}
-  rpc GetUserById(GetUsernameByIdRequest) returns (GetUsernameByIdResponse) {}
+  rpc GetUsernameById(GetUsernameByIdRequest) returns (GetUsernameByIdResponse) {}
 }
 
 message SignInUpRequest {

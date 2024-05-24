@@ -156,12 +156,12 @@ func (r *PostRepo) buildCommentTree(node *models.CommentTree) error {
 	}
 
 	for _, desc := range descendants {
-		childNode := models.CommentTree{
+		childNode := &models.CommentTree{
 			Comment: desc,
 		}
 		node.Replies = append(node.Replies, childNode)
 
-		err = r.buildCommentTree(&node.Replies[len(node.Replies)-1])
+		err = r.buildCommentTree(node.Replies[len(node.Replies)-1])
 		if err != nil {
 			return err
 		}
@@ -193,7 +193,7 @@ func (r *PostRepo) GetCommentsByPostId(ctx context.Context, postId int64) ([]*mo
 			slog.Error(err.Error())
 			return nil, err
 		}
-		commentsTree := &models.CommentTree{Comment: *comment, Replies: []models.CommentTree{}}
+		commentsTree := &models.CommentTree{Comment: *comment, Replies: []*models.CommentTree{}}
 
 		if err = r.buildCommentTree(commentsTree); err != nil {
 			slog.Error(err.Error())
@@ -212,53 +212,3 @@ func (r *PostRepo) GetCommentsByPostId(ctx context.Context, postId int64) ([]*mo
 
 	return comments, nil
 }
-
-/*
-// GetUserByLogin retrieves a user from the database by their login.
-func (r *UserRepo) GetUserByLogin(ctx context.Context, username string) (*models.UserCreatedInfo, string, error) {
-	query := `SELECT id, password_hash FROM user_data WHERE username = $1`
-
-	res := r.db.QueryRowContext(ctx, query, username)
-
-	var passwordHash string
-	user := &models.UserCreatedInfo{Username: username}
-	if err := res.Scan(&user.ID, &passwordHash); err != nil {
-		slog.Error(err.Error())
-		return nil, "", err
-	}
-
-	slog.Info("Get User By login succes Repository")
-	return user, passwordHash, nil
-}
-
-// CheckUser checks if the user with the given login and password hash exists in the database.
-func (r *UserRepo) CheckUser(ctx context.Context, data *models.UserSignInUp) (*models.UserCreatedInfo, error) {
-	user, passwordHash, err := r.GetUserByLogin(ctx, data.Username)
-	if err != nil {
-		slog.Error(err.Error())
-		return nil, err
-	}
-
-	if passwordHash != data.PasswordHash {
-		return nil, errors.New("wrong password")
-	}
-
-	slog.Info("success checkUser Repository")
-	return user, nil
-}
-
-func (r *UserRepo) GetUsernameById(ctx context.Context, id int64) (string, error) {
-	query := `SELECT username FROM user_data WHERE id = $1`
-
-	res := r.db.QueryRow(query, id)
-
-	username := ""
-	if err := res.Scan(&username); err != nil {
-		slog.Error(err.Error())
-		return "", err
-	}
-
-	slog.Info("Success get username by user id Repository")
-	return username, nil
-}
-*/
