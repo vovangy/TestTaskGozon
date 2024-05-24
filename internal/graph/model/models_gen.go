@@ -2,6 +2,15 @@
 
 package model
 
+type AuthResponse struct {
+	AuthToken *AuthToken `json:"authToken"`
+}
+
+type AuthToken struct {
+	AccessToken string `json:"accessToken"`
+	ExpiredAt   string `json:"expiredAt"`
+}
+
 type Mutation struct {
 }
 
@@ -10,4 +19,9 @@ type NewUser struct {
 }
 
 type Query struct {
+}
+
+type RegisterInput struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
 }

@@ -11,6 +11,11 @@ import (
 	"myHabr/internal/models"
 )
 
+// SignUp is the resolver for the signUp field.
+func (r *mutationResolver) SignUp(ctx context.Context, input model.RegisterInput) (*model.AuthResponse, error) {
+	panic(fmt.Errorf("not implemented: SignUp - signUp"))
+}
+
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, input *model.NewUser) (*models.User, error) {
 	panic(fmt.Errorf("not implemented: CreateUser - createUser"))
@@ -56,11 +61,20 @@ func (r *queryResolver) Comment(ctx context.Context, id string) (*models.Comment
 	panic(fmt.Errorf("not implemented: Comment - comment"))
 }
 
+// Name is the resolver for the name field.
+func (r *userResolver) Name(ctx context.Context, obj *models.User) (string, error) {
+	panic(fmt.Errorf("not implemented: Name - name"))
+}
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+// User returns UserResolver implementation.
+func (r *Resolver) User() UserResolver { return &userResolver{r} }
+
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+type userResolver struct{ *Resolver }

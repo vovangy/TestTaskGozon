@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+  db:
+    container_name: postgres
+    restart: always
+    build:
+      context: .
+      dockerfile: ./build/postgres.Dockerfile
+    volumes:
+      - type: volume
+        source: postgresdb-data
+        target: /var/lib/postgresql/data
+    env_file:
+      - ./.env
+    ports:
+      - ${DB_PORT}:5432
+    networks:
+      - myHabr-network
+
+  migrate:
+    image: migrate/migrate
+    networks:
+      - myHabr-network
+    volumes:
+      - ./db/migrations:/migrations
+    command: ["-path", "/migrations", "-database",  "postgres://${DB_USER}:${DB_PASS}@db:5432/${DB_NAME}?sslmode=disable", "up"]
+    links: 
+      - db
+
+volumes:
+  postgresdb-data:
+    driver: local
+
+networks:
+  myHabr-network:
+    name: myHabr-network
+    driver: bridge

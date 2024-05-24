@@ -26,6 +26,20 @@ type Comment {
   replies: [Comment!]!
 }
 
+input RegisterInput {
+  username: String!
+  password: String!
+}
+
+type AuthToken {
+  accessToken: String!
+  expiredAt: String!
+}
+
+type AuthResponse {
+  authToken: AuthToken!
+}
+
 type Query {
   users: [User!]!
   user(id: ID!): User
@@ -40,6 +54,7 @@ input NewUser {
 }
 
 type Mutation {
+  signUp(input: RegisterInput!): AuthResponse!
   createUser(input: NewUser): User!
   createPost(authorId: ID!, title: String!, content: String!): Post!
   createComment(authorId: ID!, postId: ID, parentCommentId: ID, content: String!): Comment!
