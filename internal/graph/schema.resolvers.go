@@ -7,13 +7,22 @@ package graph
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"myHabr/internal/graph/model"
 	"myHabr/internal/models"
+	"myHabr/internal/users/delivery/grpc/gen"
 )
 
 // SignUp is the resolver for the signUp field.
 func (r *mutationResolver) SignUp(ctx context.Context, input model.RegisterInput) (*model.AuthResponse, error) {
-	panic(fmt.Errorf("not implemented: SignUp - signUp"))
+	response, err := r.grpcUserClient.SignUp(ctx, &gen.SignInUpRequest{Username: input.Username, Password: input.Password})
+	if err != nil {
+		slog.Error(err.Error())
+		return nil, err
+	}
+
+	slog.Info("User created GraphQl")
+	return &model.AuthResponse{AuthToken: &model.AuthToken{AccessToken: response.Token, ExpiredAt: response.Exp}}, nil
 }
 
 // CreateUser is the resolver for the createUser field.

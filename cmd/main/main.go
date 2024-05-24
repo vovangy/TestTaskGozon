@@ -42,7 +42,9 @@ func main() {
 	}
 	defer grcpConnPost.Close()
 
-	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))
+	resolver := graph.NewResolver(grcpConnUser, grcpConnPost)
+
+	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", srv)
