@@ -6,7 +6,7 @@ import "myHabr/internal/models"
 //
 // It serves as dependency injection for your app, add any dependencies you require here.
 
-var users = []*models.User{{ID: "1", Name: "Vova", Posts: nil, Comments: nil}}
+var users = []*models.User{{ID: "1", Username: "Vova", Posts: nil, Comments: nil}}
 var posts = []*models.Post{{ID: "1", Title: "Aba", Content: "CHTOTO", Author: users[0], Comments: nil}}
 
 type Resolver struct{}

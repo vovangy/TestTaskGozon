@@ -33,7 +33,7 @@ func (r *queryResolver) Users(ctx context.Context) ([]*models.User, error) {
 
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id string) (*models.User, error) {
-	panic(fmt.Errorf("not implemented: User - user"))
+	return users[0], nil
 }
 
 // Posts is the resolver for the posts field.
