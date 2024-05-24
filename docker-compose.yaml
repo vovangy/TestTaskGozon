@@ -24,9 +24,53 @@ services:
       - myHabr-network
     volumes:
       - ./db/migrations:/migrations
-    command: ["-path", "/migrations", "-database",  "postgres://${DB_USER}:${DB_PASS}@db:5432/${DB_NAME}?sslmode=disable", "up"]
+    command: ["-path", "/migrations", "-database",  "postgres://${DB_USER}:${DB_PASS}@db:5432/${DB_NAME}?sslmode=disable", "up" ]
     links: 
       - db
+
+  main:
+    depends_on:
+      - db
+    container_name: mainService
+    build:
+      context: .
+      dockerfile: ./build/main.Dockerfile
+    ports:
+      - '8080:8080'
+    env_file:
+      - ./.env
+    networks:
+      - myHabr-network
+
+  myhabr-user:
+    env_file:
+      - ./.env
+    container_name: ${GRPC_USER_CONTAINER_IP}
+    build:
+      context: .
+      dockerfile: ./build/user.Dockerfile
+    restart: always
+    expose:
+      - "${GRPC_USER_PORT}"
+    depends_on:
+      - db
+    networks:
+      - myHabr-network
+
+  myhabr-post:
+    env_file:
+      - ./.env
+    container_name: ${GRPC_POST_CONTAINER_IP}
+    build:
+      context: .
+      dockerfile: ./build/post.Dockerfile
+    restart: always
+    expose:
+      - "${GRPC_POST_PORT}"
+    depends_on:
+      - db
+    networks:
+      - myHabr-network
 
 volumes:
   postgresdb-data:
