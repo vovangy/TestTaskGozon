@@ -19,7 +19,7 @@ func NewPostsServerHandler(uc posts.PostUsecase) *PostsServerHandler {
 
 func (h *PostsServerHandler) CreatePost(ctx context.Context, req *genPosts.CreatePostRequest) (*genPosts.CreatePostResponse, error) {
 
-	post, err := h.uc.CreatePost(ctx, &models.PostCreateData{UserId: req.UserId, IsCommented: req.IsCommented, Title: req.Content, Content: req.Content})
+	post, err := h.uc.CreatePost(ctx, &models.PostCreateData{UserId: req.UserId, IsCommented: req.IsCommented, Title: req.Title, Content: req.Content})
 
 	if err != nil {
 		slog.Error(err.Error())
