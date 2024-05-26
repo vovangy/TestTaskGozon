@@ -39,6 +39,21 @@ func (r *mutationResolver) SignIn(ctx context.Context, input model.RegisterInput
 	return &model.AuthResponse{AuthToken: &model.AuthToken{AccessToken: response.Token, ExpiredAt: response.Exp}}, nil
 }
 
+// BlockComments is the resolver for the blockComments field.
+func (r *mutationResolver) BlockComments(ctx context.Context, postID string) (string, error) {
+	idInt, err := strconv.Atoi(postID)
+	if err != nil {
+		slog.Error(err.Error())
+		return "", err
+	}
+	_, err = r.grpcPostClient.BlockCommentsOnPost(ctx, &postGen.BlockCommentsOnPostRequest{PostId: int64(idInt)})
+	if err != nil {
+		slog.Error(err.Error())
+		return "", err
+	}
+	return "Comments blocked", nil
+}
+
 // CreatePost is the resolver for the createPost field.
 func (r *mutationResolver) CreatePost(ctx context.Context, input model.CreatePostInput) (*models.Post, error) {
 	id, ok := ctx.Value("userid").(int64)
@@ -47,7 +62,7 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input model.CreatePos
 		return nil, fmt.Errorf("Error with id")
 	}
 
-	response, err := r.grpcPostClient.CreatePost(ctx, &postGen.CreatePostRequest{UserId: id, Title: input.Title, Content: input.Content, IsCommented: true})
+	response, err := r.grpcPostClient.CreatePost(ctx, &postGen.CreatePostRequest{UserId: id, Title: input.Title, Content: input.Content, IsCommented: input.IsCommented})
 	if err != nil {
 		slog.Error(err.Error())
 		return nil, err
@@ -117,12 +132,33 @@ func (r *queryResolver) User(ctx context.Context, id string) (*models.User, erro
 
 // Posts is the resolver for the posts field.
 func (r *queryResolver) Posts(ctx context.Context) ([]*models.Post, error) {
+	responsePosts, err := r.grpcPostClient.GetPosts(ctx, &postGen.GetPostsRequest{})
+	if err != nil {
+		slog.Error(err.Error())
+		return nil, err
+	}
+
+	posts := []*models.Post{}
+
+	for _, val := range responsePosts.Posts {
+		post, err := r.Post(ctx, strconv.FormatInt(val.PostId, 10))
+		if err != nil {
+			slog.Error(err.Error())
+			return nil, err
+		}
+		posts = append(posts, post)
+	}
+
 	return posts, nil
 }
 
 // Post is the resolver for the post field.
 func (r *queryResolver) Post(ctx context.Context, id string) (*models.Post, error) {
 	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		slog.Error(err.Error())
+		return nil, err
+	}
 	responsePost, err := r.grpcPostClient.GetPostById(ctx, &postGen.GetPostByIdRequest{PostId: int64(idInt)})
 	if err != nil {
 		slog.Error(err.Error())
@@ -174,16 +210,6 @@ func (r *queryResolver) Post(ctx context.Context, id string) (*models.Post, erro
 	}
 
 	return &models.Post{ID: id, Title: responsePost.Title, Content: responsePost.Content, Author: &models.User{ID: strconv.FormatInt(responsePost.UserId, 10), Username: responseUser.Username}, Comments: comments}, nil
-}
-
-// Comments is the resolver for the comments field.
-func (r *queryResolver) Comments(ctx context.Context) ([]*models.Comment, error) {
-	panic(fmt.Errorf("not implemented: Comments - comments"))
-}
-
-// Comment is the resolver for the comment field.
-func (r *queryResolver) Comment(ctx context.Context, id string) (*models.Comment, error) {
-	panic(fmt.Errorf("not implemented: Comment - comment"))
 }
 
 // Mutation returns MutationResolver implementation.

@@ -102,3 +102,55 @@ func (h *PostsServerHandler) GetPostById(ctx context.Context, req *genPosts.GetP
 	slog.Info("Success getting post Grpc")
 	return &genPosts.GetPostByIdResponse{UserId: post.Post.UserId, Title: post.Post.Title, Content: post.Post.Content, PostId: post.Post.ID, IsCommented: post.Post.IsCommented, Comments: comments}, nil
 }
+
+func (h *PostsServerHandler) GetPosts(ctx context.Context, req *genPosts.GetPostsRequest) (*genPosts.GetPostsResponse, error) {
+
+	postsGen, err := h.uc.GetPosts(ctx)
+	posts := []*genPosts.GetPostByIdResponse{}
+
+	if err != nil {
+		slog.Error(err.Error())
+		return nil, err
+	}
+	for _, post := range postsGen {
+
+		var comments []*genPosts.Comment
+
+		type StackItem struct {
+			Node       *models.CommentTree
+			ParentNode *genPosts.Comment
+		}
+
+		for i := 0; i < len(post.Comments); i++ {
+			stack := []StackItem{{Node: post.Comments[i], ParentNode: nil}}
+
+			for len(stack) > 0 {
+				current := stack[len(stack)-1]
+				stack = stack[:len(stack)-1]
+
+				convertedComment := &genPosts.Comment{
+					CommentId: current.Node.Comment.CommentId,
+					UserId:    current.Node.Comment.UserId,
+					PostId:    current.Node.Comment.PostId,
+					Content:   current.Node.Comment.Content,
+					Comments:  []*genPosts.Comment{},
+				}
+
+				if current.ParentNode == nil {
+					comments = append(comments, convertedComment)
+				} else {
+					current.ParentNode.Comments = append(current.ParentNode.Comments, convertedComment)
+				}
+
+				for i := len(current.Node.Replies) - 1; i >= 0; i-- {
+					stack = append(stack, StackItem{Node: current.Node.Replies[i], ParentNode: convertedComment})
+				}
+			}
+		}
+
+		posts = append(posts, &genPosts.GetPostByIdResponse{UserId: post.Post.UserId, Title: post.Post.Title, Content: post.Post.Content, PostId: post.Post.ID, IsCommented: post.Post.IsCommented, Comments: comments})
+	}
+
+	slog.Info("Success getting posts Grpc")
+	return &genPosts.GetPostsResponse{Posts: posts}, nil
+}

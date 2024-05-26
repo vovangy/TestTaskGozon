@@ -53,8 +53,6 @@ type Query {
   user(id: ID!): User!
   posts: [Post!]!
   post(id: ID!): Post!
-  comments: [Comment!]!
-  comment(id: ID!): Comment
 }
 
 input NewUser {
@@ -64,6 +62,7 @@ input NewUser {
 type Mutation {
   signUp(input: RegisterInput!): AuthResponse!
   signIn(input: RegisterInput!): AuthResponse! 
+  blockComments(postId: String!): String! @auth
   createPost(input: CreatePostInput!): Post! @auth
   createComment(input: CreateCommentInput!): Comment! @auth
 }

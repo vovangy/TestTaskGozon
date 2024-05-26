@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	Post_CreatePost_FullMethodName          = "/posts.Post/CreatePost"
 	Post_GetPostById_FullMethodName         = "/posts.Post/GetPostById"
+	Post_GetPosts_FullMethodName            = "/posts.Post/GetPosts"
 	Post_CreateComment_FullMethodName       = "/posts.Post/CreateComment"
 	Post_BlockCommentsOnPost_FullMethodName = "/posts.Post/BlockCommentsOnPost"
 )
@@ -31,6 +32,7 @@ const (
 type PostClient interface {
 	CreatePost(ctx context.Context, in *CreatePostRequest, opts ...grpc.CallOption) (*CreatePostResponse, error)
 	GetPostById(ctx context.Context, in *GetPostByIdRequest, opts ...grpc.CallOption) (*GetPostByIdResponse, error)
+	GetPosts(ctx context.Context, in *GetPostsRequest, opts ...grpc.CallOption) (*GetPostsResponse, error)
 	CreateComment(ctx context.Context, in *CreateCommentRequest, opts ...grpc.CallOption) (*CreateCommentResponse, error)
 	BlockCommentsOnPost(ctx context.Context, in *BlockCommentsOnPostRequest, opts ...grpc.CallOption) (*BlockCommentsOnPostResponse, error)
 }
@@ -61,6 +63,15 @@ func (c *postClient) GetPostById(ctx context.Context, in *GetPostByIdRequest, op
 	return out, nil
 }
 
+func (c *postClient) GetPosts(ctx context.Context, in *GetPostsRequest, opts ...grpc.CallOption) (*GetPostsResponse, error) {
+	out := new(GetPostsResponse)
+	err := c.cc.Invoke(ctx, Post_GetPosts_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *postClient) CreateComment(ctx context.Context, in *CreateCommentRequest, opts ...grpc.CallOption) (*CreateCommentResponse, error) {
 	out := new(CreateCommentResponse)
 	err := c.cc.Invoke(ctx, Post_CreateComment_FullMethodName, in, out, opts...)
@@ -85,6 +96,7 @@ func (c *postClient) BlockCommentsOnPost(ctx context.Context, in *BlockCommentsO
 type PostServer interface {
 	CreatePost(context.Context, *CreatePostRequest) (*CreatePostResponse, error)
 	GetPostById(context.Context, *GetPostByIdRequest) (*GetPostByIdResponse, error)
+	GetPosts(context.Context, *GetPostsRequest) (*GetPostsResponse, error)
 	CreateComment(context.Context, *CreateCommentRequest) (*CreateCommentResponse, error)
 	BlockCommentsOnPost(context.Context, *BlockCommentsOnPostRequest) (*BlockCommentsOnPostResponse, error)
 	mustEmbedUnimplementedPostServer()
@@ -99,6 +111,9 @@ func (UnimplementedPostServer) CreatePost(context.Context, *CreatePostRequest) (
 }
 func (UnimplementedPostServer) GetPostById(context.Context, *GetPostByIdRequest) (*GetPostByIdResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPostById not implemented")
+}
+func (UnimplementedPostServer) GetPosts(context.Context, *GetPostsRequest) (*GetPostsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPosts not implemented")
 }
 func (UnimplementedPostServer) CreateComment(context.Context, *CreateCommentRequest) (*CreateCommentResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateComment not implemented")
@@ -155,6 +170,24 @@ func _Post_GetPostById_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Post_GetPosts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPostsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PostServer).GetPosts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Post_GetPosts_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PostServer).GetPosts(ctx, req.(*GetPostsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Post_CreateComment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateCommentRequest)
 	if err := dec(in); err != nil {
@@ -205,6 +238,10 @@ var Post_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPostById",
 			Handler:    _Post_GetPostById_Handler,
+		},
+		{
+			MethodName: "GetPosts",
+			Handler:    _Post_GetPosts_Handler,
 		},
 		{
 			MethodName: "CreateComment",

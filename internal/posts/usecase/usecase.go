@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"myHabr/internal/models"
 	"myHabr/internal/posts"
@@ -29,6 +30,11 @@ func (u *PostUsecase) CreatePost(ctx context.Context, data *models.PostCreateDat
 }
 
 func (u *PostUsecase) CreateComment(ctx context.Context, data *models.CommentCreateData) (*models.CommentCreateResponse, error) {
+	post, err := u.repo.GetPostById(ctx, data.PostId)
+	if post.IsCommented != true {
+		return nil, fmt.Errorf("Post is not commented")
+	}
+
 	tx, err := u.repo.BeginTx(ctx)
 	if err != nil {
 		slog.Error(err.Error())
@@ -41,7 +47,7 @@ func (u *PostUsecase) CreateComment(ctx context.Context, data *models.CommentCre
 		}
 	}()
 
-	post, err := u.repo.CreateComment(ctx, tx, data)
+	comment, err := u.repo.CreateComment(ctx, tx, data)
 	if err != nil {
 		slog.Error(err.Error())
 		return nil, err
@@ -54,11 +60,10 @@ func (u *PostUsecase) CreateComment(ctx context.Context, data *models.CommentCre
 	}
 
 	slog.Info("Transaction Succesfully Commited")
-	return post, nil
+	return comment, nil
 }
 
 func (u *PostUsecase) BlockCommentsOnPost(ctx context.Context, data *models.CommentsBlockRequest) error {
-
 	err := u.repo.BlockCommentsOnPost(ctx, data)
 	if err != nil {
 		slog.Error(err.Error())
@@ -67,6 +72,28 @@ func (u *PostUsecase) BlockCommentsOnPost(ctx context.Context, data *models.Comm
 
 	slog.Info("Comments Succesfully blocked Usecase")
 	return nil
+}
+
+func (u *PostUsecase) GetPosts(ctx context.Context) ([]*models.PostResponse, error) {
+	postIds, err := u.repo.GetAllPostIds(ctx)
+	if err != nil {
+		slog.Error(err.Error())
+		return nil, err
+	}
+
+	posts := []*models.PostResponse{}
+
+	for _, val := range postIds {
+		post, err := u.GetPostById(ctx, val)
+		if err != nil {
+			slog.Error(err.Error())
+			return nil, err
+		}
+		posts = append(posts, post)
+	}
+
+	slog.Info("Comments Succesfully blocked Usecase")
+	return posts, nil
 }
 
 func (u *PostUsecase) GetPostById(ctx context.Context, postId int64) (*models.PostResponse, error) {

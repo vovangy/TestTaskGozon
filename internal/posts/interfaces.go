@@ -11,6 +11,7 @@ type PostUsecase interface {
 	CreateComment(ctx context.Context, data *models.CommentCreateData) (*models.CommentCreateResponse, error)
 	BlockCommentsOnPost(ctx context.Context, data *models.CommentsBlockRequest) error
 	GetPostById(ctx context.Context, postId int64) (*models.PostResponse, error)
+	GetPosts(ctx context.Context) ([]*models.PostResponse, error)
 }
 
 // PostRepo represents the repository interface for posts.
@@ -21,4 +22,5 @@ type PostRepo interface {
 	BlockCommentsOnPost(ctx context.Context, data *models.CommentsBlockRequest) error
 	GetCommentsByPostId(ctx context.Context, postId int64) ([]*models.CommentTree, error)
 	GetPostById(ctx context.Context, postId int64) (*models.PostCreateResponse, error)
+	GetAllPostIds(ctx context.Context) ([]int64, error)
 }

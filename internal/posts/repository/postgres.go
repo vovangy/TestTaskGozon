@@ -92,7 +92,7 @@ func (r *PostRepo) CreateComment(ctx context.Context, tx models.Transaction, com
 
 // BlockCommentsOnPost block a new comments on post in the database.
 func (r *PostRepo) BlockCommentsOnPost(ctx context.Context, data *models.CommentsBlockRequest) error {
-	updatePost := `UPDATE post SET is_commented = false WHERE user_id = $1 AND post_id = $2`
+	updatePost := `UPDATE post SET is_commented = false WHERE user_id = $1 AND id = $2`
 
 	if _, err := r.db.QueryContext(ctx, updatePost, data.UserId, data.PostId); err != nil {
 		slog.Error(err.Error())
@@ -102,6 +102,37 @@ func (r *PostRepo) BlockCommentsOnPost(ctx context.Context, data *models.Comment
 	slog.Info("Comments succesfully blocked Repository")
 
 	return nil
+}
+
+// GetAllPostIds возвращает список всех ID постов из базы данных.
+func (r *PostRepo) GetAllPostIds(ctx context.Context) ([]int64, error) {
+	var postIds []int64
+
+	query := `SELECT id FROM post`
+
+	rows, err := r.db.QueryContext(ctx, query)
+	if err != nil {
+		slog.Error(err.Error())
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var postId int64
+		if err := rows.Scan(&postId); err != nil {
+			slog.Error(err.Error())
+			return nil, err
+		}
+		postIds = append(postIds, postId)
+	}
+	if err := rows.Err(); err != nil {
+		slog.Error(err.Error())
+		return nil, err
+	}
+
+	slog.Info("All Post IDs successfully retrieved from Repository")
+
+	return postIds, nil
 }
 
 // GetPostById getting a post from the database.

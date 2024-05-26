@@ -7,6 +7,7 @@ option go_package = "./internal/posts/delivery/grpc/gen/;gen";
 service Post {
   rpc CreatePost(CreatePostRequest) returns (CreatePostResponse) {}
   rpc GetPostById(GetPostByIdRequest) returns (GetPostByIdResponse) {}
+  rpc GetPosts(GetPostsRequest) returns (GetPostsResponse) {}
   rpc CreateComment(CreateCommentRequest) returns (CreateCommentResponse) {}
   rpc BlockCommentsOnPost(BlockCommentsOnPostRequest) returns (BlockCommentsOnPostResponse) {}
 }
@@ -68,4 +69,11 @@ message BlockCommentsOnPostRequest {
 }
 
 message BlockCommentsOnPostResponse {
+}
+
+message GetPostsRequest {
+}
+
+message GetPostsResponse{
+  repeated GetPostByIdResponse Posts = 1;
 }
