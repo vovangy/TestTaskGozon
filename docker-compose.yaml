@@ -17,9 +17,17 @@ services:
       - ${DB_PORT}:5432
     networks:
       - myHabr-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   migrate:
     image: migrate/migrate
+    depends_on:
+      db:
+        condition: service_healthy
     networks:
       - myHabr-network
     volumes:

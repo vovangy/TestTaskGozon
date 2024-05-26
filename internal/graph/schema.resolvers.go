@@ -41,12 +41,18 @@ func (r *mutationResolver) SignIn(ctx context.Context, input model.RegisterInput
 
 // BlockComments is the resolver for the blockComments field.
 func (r *mutationResolver) BlockComments(ctx context.Context, postID string) (string, error) {
+	id, ok := ctx.Value("userid").(int64)
+	if !ok {
+		slog.Error("Error with Id")
+		return "", fmt.Errorf("Error with id")
+	}
+
 	idInt, err := strconv.Atoi(postID)
 	if err != nil {
 		slog.Error(err.Error())
 		return "", err
 	}
-	_, err = r.grpcPostClient.BlockCommentsOnPost(ctx, &postGen.BlockCommentsOnPostRequest{PostId: int64(idInt)})
+	_, err = r.grpcPostClient.BlockCommentsOnPost(ctx, &postGen.BlockCommentsOnPostRequest{UserId: id, PostId: int64(idInt)})
 	if err != nil {
 		slog.Error(err.Error())
 		return "", err
