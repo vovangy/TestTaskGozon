@@ -94,7 +94,7 @@ func (r *PostRepo) CreateComment(ctx context.Context, tx models.Transaction, com
 func (r *PostRepo) BlockCommentsOnPost(ctx context.Context, data *models.CommentsBlockRequest) error {
 	updatePost := `UPDATE post SET is_commented = false WHERE user_id = $1 AND id = $2`
 
-	if _, err := r.db.QueryContext(ctx, updatePost, data.UserId, data.PostId); err != nil {
+	if _, err := r.db.ExecContext(ctx, updatePost, data.UserId, data.PostId); err != nil {
 		slog.Error(err.Error())
 		return err
 	}
@@ -153,7 +153,7 @@ func (r *PostRepo) GetPostById(ctx context.Context, postId int64) (*models.PostC
 }
 
 // getDirectDescendants getting a descendants comments from the database.
-func (r *PostRepo) getDirectDescendants(commentID int64) ([]models.CommentCreateResponse, error) {
+func (r *PostRepo) GetDirectDescendants(commentID int64) ([]models.CommentCreateResponse, error) {
 	rows, err := r.db.Query(`
         SELECT c.id, c.content, c.user_id, c.post_id
         FROM comment c
@@ -179,8 +179,8 @@ func (r *PostRepo) getDirectDescendants(commentID int64) ([]models.CommentCreate
 	return comments, nil
 }
 
-func (r *PostRepo) buildCommentTree(node *models.CommentTree) error {
-	descendants, err := r.getDirectDescendants(node.Comment.CommentId)
+func (r *PostRepo) BuildCommentTree(node *models.CommentTree) error {
+	descendants, err := r.GetDirectDescendants(node.Comment.CommentId)
 	if err != nil {
 		return err
 	}
@@ -191,7 +191,7 @@ func (r *PostRepo) buildCommentTree(node *models.CommentTree) error {
 		}
 		node.Replies = append(node.Replies, childNode)
 
-		err = r.buildCommentTree(node.Replies[len(node.Replies)-1])
+		err = r.BuildCommentTree(node.Replies[len(node.Replies)-1])
 		if err != nil {
 			return err
 		}
@@ -225,7 +225,7 @@ func (r *PostRepo) GetCommentsByPostId(ctx context.Context, postId int64) ([]*mo
 		}
 		commentsTree := &models.CommentTree{Comment: *comment, Replies: []*models.CommentTree{}}
 
-		if err = r.buildCommentTree(commentsTree); err != nil {
+		if err = r.BuildCommentTree(commentsTree); err != nil {
 			slog.Error(err.Error())
 			return nil, err
 		}
