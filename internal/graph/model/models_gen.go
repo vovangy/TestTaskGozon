@@ -11,6 +11,18 @@ type AuthToken struct {
 	ExpiredAt   string `json:"expiredAt"`
 }
 
+type CreateCommentInput struct {
+	PostID          string `json:"postId"`
+	ParentCommentID string `json:"parentCommentId"`
+	Content         string `json:"content"`
+}
+
+type CreatePostInput struct {
+	Title       string `json:"title"`
+	Content     string `json:"content"`
+	IsCommented bool   `json:"IsCommented"`
+}
+
 type Mutation struct {
 }
 

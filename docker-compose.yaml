@@ -24,7 +24,7 @@ services:
       - myHabr-network
     volumes:
       - ./db/migrations:/migrations
-    command: ["-path", "/migrations", "-database",  "postgres://${DB_USER}:${DB_PASS}@db:5432/${DB_NAME}?sslmode=disable", "up" ]
+    command: ["-path", "/migrations", "-database",  "postgres://${DB_USER}:${DB_PASS}@db:5432/${DB_NAME}?sslmode=disable", "up"]
     links: 
       - db
 

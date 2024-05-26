@@ -15,12 +15,10 @@ func GenerateHashString(s string) string {
 
 func ConvertToNestedComments(tree *models.CommentTree) []*models.Comment {
 	rootComment := &models.Comment{
-		ID:            strconv.FormatInt(tree.Comment.CommentId, 10),
-		Content:       tree.Comment.Content,
-		Author:        nil,
-		Post:          nil,
-		ParentComment: nil,
-		Replies:       []*models.Comment{},
+		ID:      strconv.FormatInt(tree.Comment.CommentId, 10),
+		Content: tree.Comment.Content,
+		Author:  nil,
+		Replies: []*models.Comment{},
 	}
 
 	for _, replyTree := range tree.Replies {

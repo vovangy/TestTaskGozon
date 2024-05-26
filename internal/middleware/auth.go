@@ -13,13 +13,13 @@ const CookieName = "jwt-myHabr"
 // JwtMiddleware is a middleware function that handles JWT authentication.
 func JwtMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie(CookieName)
-		if err != nil {
+		cookie := r.Header.Get("Authorization")
+		if cookie == "" {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		token := cookie.Value
+		token := cookie
 		claims, err := jwt.ParseToken(token)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)

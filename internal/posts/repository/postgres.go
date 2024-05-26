@@ -55,7 +55,6 @@ func (r *PostRepo) CreatePost(ctx context.Context, post *models.PostCreateData) 
 
 // CreateComment creates a new comment in the database.
 func (r *PostRepo) CreateComment(ctx context.Context, tx models.Transaction, comment *models.CommentCreateData) (*models.CommentCreateResponse, error) {
-
 	insertComment := `INSERT INTO comment (user_id, post_id, content) VALUES ($1, $2, $3) RETURNING id`
 	var lastInsertID int64
 
@@ -78,7 +77,7 @@ func (r *PostRepo) CreateComment(ctx context.Context, tx models.Transaction, com
 
 	query := `SELECT c.user_id, c.post_id, c.content, COALESCE(cc.ancestor_id, 0) FROM comment as c LEFT JOIN comment_closure AS cc ON c.id=cc.descendant_id WHERE c.id = $1`
 
-	res := r.db.QueryRow(query, lastInsertID)
+	res := tx.QueryRowContext(ctx, query, lastInsertID)
 
 	newComment := &models.CommentCreateResponse{CommentId: lastInsertID}
 	if err := res.Scan(&newComment.UserId, &newComment.PostId, &newComment.Content, &newComment.CommentParentId); err != nil {
@@ -112,7 +111,7 @@ func (r *PostRepo) GetPostById(ctx context.Context, postId int64) (*models.PostC
 	res := r.db.QueryRowContext(ctx, selectPost, postId)
 
 	post := &models.PostCreateResponse{ID: postId}
-	if err := res.Scan(post.UserId, post.IsCommented, post.Title, post.Content); err != nil {
+	if err := res.Scan(&post.UserId, &post.IsCommented, &post.Title, &post.Content); err != nil {
 		slog.Error(err.Error())
 		return nil, err
 	}

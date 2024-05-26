@@ -1,10 +1,8 @@
 package models
 
 type User struct {
-	ID       string     `json:"id"`
-	Username string     `json:"username"`
-	Posts    []*Post    `json:"posts"`
-	Comments []*Comment `json:"comments"`
+	ID       string `json:"id"`
+	Username string `json:"username"`
 }
 
 type UserSignInUp struct {

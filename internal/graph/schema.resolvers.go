@@ -10,12 +10,14 @@ import (
 	"log/slog"
 	"myHabr/internal/graph/model"
 	"myHabr/internal/models"
-	"myHabr/internal/users/delivery/grpc/gen"
+	postGen "myHabr/internal/posts/delivery/grpc/gen"
+	userGen "myHabr/internal/users/delivery/grpc/gen"
+	"strconv"
 )
 
 // SignUp is the resolver for the signUp field.
 func (r *mutationResolver) SignUp(ctx context.Context, input model.RegisterInput) (*model.AuthResponse, error) {
-	response, err := r.grpcUserClient.SignUp(ctx, &gen.SignInUpRequest{Username: input.Username, Password: input.Password})
+	response, err := r.grpcUserClient.SignUp(ctx, &userGen.SignInUpRequest{Username: input.Username, Password: input.Password})
 	if err != nil {
 		slog.Error(err.Error())
 		return nil, err
@@ -25,29 +27,92 @@ func (r *mutationResolver) SignUp(ctx context.Context, input model.RegisterInput
 	return &model.AuthResponse{AuthToken: &model.AuthToken{AccessToken: response.Token, ExpiredAt: response.Exp}}, nil
 }
 
-// CreateUser is the resolver for the createUser field.
-func (r *mutationResolver) CreateUser(ctx context.Context, input *model.NewUser) (*models.User, error) {
-	panic(fmt.Errorf("not implemented: CreateUser - createUser"))
+// SignIn is the resolver for the signIn field.
+func (r *mutationResolver) SignIn(ctx context.Context, input model.RegisterInput) (*model.AuthResponse, error) {
+	response, err := r.grpcUserClient.Login(ctx, &userGen.SignInUpRequest{Username: input.Username, Password: input.Password})
+	if err != nil {
+		slog.Error(err.Error())
+		return nil, err
+	}
+
+	slog.Info("User logined GraphQl")
+	return &model.AuthResponse{AuthToken: &model.AuthToken{AccessToken: response.Token, ExpiredAt: response.Exp}}, nil
 }
 
 // CreatePost is the resolver for the createPost field.
-func (r *mutationResolver) CreatePost(ctx context.Context, authorID string, title string, content string) (*models.Post, error) {
-	panic(fmt.Errorf("not implemented: CreatePost - createPost"))
+func (r *mutationResolver) CreatePost(ctx context.Context, input model.CreatePostInput) (*models.Post, error) {
+	id, ok := ctx.Value("userid").(int64)
+	if !ok {
+		slog.Error("Error with Id")
+		return nil, fmt.Errorf("Error with id")
+	}
+
+	response, err := r.grpcPostClient.CreatePost(ctx, &postGen.CreatePostRequest{UserId: id, Title: input.Title, Content: input.Content, IsCommented: true})
+	if err != nil {
+		slog.Error(err.Error())
+		return nil, err
+	}
+
+	responseUser, err := r.grpcUserClient.GetUsernameById(ctx, &userGen.GetUsernameByIdRequest{UserId: id})
+	if err != nil {
+		slog.Error(err.Error())
+		return nil, err
+	}
+
+	slog.Info("Post created GraphQl")
+	return &models.Post{ID: strconv.FormatInt(response.PostId, 10), Title: response.Title, Content: response.Content, Author: &models.User{Username: responseUser.Username, ID: strconv.FormatInt(id, 10)}, Comments: nil}, nil
 }
 
 // CreateComment is the resolver for the createComment field.
-func (r *mutationResolver) CreateComment(ctx context.Context, authorID string, postID *string, parentCommentID *string, content string) (*models.Comment, error) {
-	panic(fmt.Errorf("not implemented: CreateComment - createComment"))
-}
+func (r *mutationResolver) CreateComment(ctx context.Context, input model.CreateCommentInput) (*models.Comment, error) {
+	id, ok := ctx.Value("userid").(int64)
+	if !ok {
+		slog.Error("Error with Id")
+		return nil, fmt.Errorf("Error with id")
+	}
 
-// Users is the resolver for the users field.
-func (r *queryResolver) Users(ctx context.Context) ([]*models.User, error) {
-	return users, nil
+	postId, err := strconv.Atoi(input.PostID)
+	if err != nil {
+		slog.Error(err.Error())
+		return nil, err
+	}
+
+	parentCommnetId, err := strconv.Atoi(input.ParentCommentID)
+	if err != nil {
+		slog.Error(err.Error())
+		return nil, err
+	}
+
+	response, err := r.grpcPostClient.CreateComment(ctx, &postGen.CreateCommentRequest{UserId: id, PostId: int64(postId), CommentParentId: int64(parentCommnetId), Content: input.Content})
+	if err != nil {
+		slog.Error(err.Error())
+		return nil, err
+	}
+
+	responseUser, err := r.grpcUserClient.GetUsernameById(ctx, &userGen.GetUsernameByIdRequest{UserId: id})
+	if err != nil {
+		slog.Error(err.Error())
+		return nil, err
+	}
+
+	slog.Info("Comment created GraphQl")
+	return &models.Comment{ID: strconv.FormatInt(response.CommentId, 10), Content: response.Content, Author: &models.User{Username: responseUser.Username, ID: strconv.FormatInt(id, 10)}, Replies: nil}, nil
 }
 
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id string) (*models.User, error) {
-	return users[0], nil
+	idInt, err := strconv.Atoi(id)
+	if err != nil {
+		slog.Error(err.Error())
+		return nil, err
+	}
+
+	responseUser, err := r.grpcUserClient.GetUsernameById(ctx, &userGen.GetUsernameByIdRequest{UserId: int64(idInt)})
+	if err != nil {
+		slog.Error(err.Error())
+		return nil, err
+	}
+	return &models.User{ID: id, Username: responseUser.Username}, nil
 }
 
 // Posts is the resolver for the posts field.
@@ -57,7 +122,58 @@ func (r *queryResolver) Posts(ctx context.Context) ([]*models.Post, error) {
 
 // Post is the resolver for the post field.
 func (r *queryResolver) Post(ctx context.Context, id string) (*models.Post, error) {
-	panic(fmt.Errorf("not implemented: Post - post"))
+	idInt, err := strconv.Atoi(id)
+	responsePost, err := r.grpcPostClient.GetPostById(ctx, &postGen.GetPostByIdRequest{PostId: int64(idInt)})
+	if err != nil {
+		slog.Error(err.Error())
+		return nil, err
+	}
+
+	var comments []*models.Comment
+
+	type StackItem struct {
+		Node       *postGen.Comment
+		ParentNode *models.Comment
+	}
+
+	for i := 0; i < len(responsePost.Comments); i++ {
+		stack := []StackItem{{Node: responsePost.Comments[i], ParentNode: nil}}
+
+		for len(stack) > 0 {
+			current := stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+
+			responseUser, err := r.grpcUserClient.GetUsernameById(ctx, &userGen.GetUsernameByIdRequest{UserId: current.Node.UserId})
+			if err != nil {
+				slog.Error(err.Error())
+				return nil, err
+			}
+			convertedComment := &models.Comment{
+				ID:      strconv.FormatInt(current.Node.CommentId, 10),
+				Content: current.Node.Content,
+				Author:  &models.User{ID: strconv.FormatInt(current.Node.UserId, 10), Username: responseUser.Username},
+				Replies: []*models.Comment{},
+			}
+
+			if current.ParentNode == nil {
+				comments = append(comments, convertedComment)
+			} else {
+				current.ParentNode.Replies = append(current.ParentNode.Replies, convertedComment)
+			}
+
+			for i := len(current.Node.Comments) - 1; i >= 0; i-- {
+				stack = append(stack, StackItem{Node: current.Node.Comments[i], ParentNode: convertedComment})
+			}
+		}
+	}
+
+	responseUser, err := r.grpcUserClient.GetUsernameById(ctx, &userGen.GetUsernameByIdRequest{UserId: responsePost.UserId})
+	if err != nil {
+		slog.Error(err.Error())
+		return nil, err
+	}
+
+	return &models.Post{ID: id, Title: responsePost.Title, Content: responsePost.Content, Author: &models.User{ID: strconv.FormatInt(responsePost.UserId, 10), Username: responseUser.Username}, Comments: comments}, nil
 }
 
 // Comments is the resolver for the comments field.
@@ -70,20 +186,11 @@ func (r *queryResolver) Comment(ctx context.Context, id string) (*models.Comment
 	panic(fmt.Errorf("not implemented: Comment - comment"))
 }
 
-// Name is the resolver for the name field.
-func (r *userResolver) Name(ctx context.Context, obj *models.User) (string, error) {
-	panic(fmt.Errorf("not implemented: Name - name"))
-}
-
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
-// User returns UserResolver implementation.
-func (r *Resolver) User() UserResolver { return &userResolver{r} }
-
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-type userResolver struct{ *Resolver }

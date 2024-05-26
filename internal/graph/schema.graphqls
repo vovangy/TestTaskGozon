@@ -1,12 +1,11 @@
 # GraphQL schema example
 #
 # https://gqlgen.com/getting-started/
+directive @auth on FIELD_DEFINITION
 
 type User {
   id: ID!
-  name: String!
-  posts: [Post!]!
-  comments: [Comment!]!
+  username: String!
 }
 
 type Post {
@@ -14,21 +13,31 @@ type Post {
   title: String!
   content: String!
   author: User!
-  comments: [Comment!]!
+  comments: [Comment!]
 }
 
 type Comment {
   id: ID!
   content: String!
   author: User!
-  post: Post
-  parentComment: Comment
-  replies: [Comment!]!
+  replies: [Comment!]
 }
 
 input RegisterInput {
   username: String!
   password: String!
+}
+
+input CreatePostInput {
+  title: String!
+  content: String!
+  IsCommented: Boolean!
+}
+
+input CreateCommentInput {
+  postId: ID!
+  parentCommentId: ID!
+  content: String!
 }
 
 type AuthToken {
@@ -41,10 +50,9 @@ type AuthResponse {
 }
 
 type Query {
-  users: [User!]!
-  user(id: ID!): User
+  user(id: ID!): User!
   posts: [Post!]!
-  post(id: ID!): Post
+  post(id: ID!): Post!
   comments: [Comment!]!
   comment(id: ID!): Comment
 }
@@ -55,7 +63,7 @@ input NewUser {
 
 type Mutation {
   signUp(input: RegisterInput!): AuthResponse!
-  createUser(input: NewUser): User!
-  createPost(authorId: ID!, title: String!, content: String!): Post!
-  createComment(authorId: ID!, postId: ID, parentCommentId: ID, content: String!): Comment!
+  signIn(input: RegisterInput!): AuthResponse! 
+  createPost(input: CreatePostInput!): Post! @auth
+  createComment(input: CreateCommentInput!): Comment! @auth
 }

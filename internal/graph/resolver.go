@@ -12,7 +12,7 @@ import (
 //
 // It serves as dependency injection for your app, add any dependencies you require here.
 
-var users = []*models.User{{ID: "1", Username: "Vova", Posts: nil, Comments: nil}}
+var users = []*models.User{{ID: "1", Username: "Vova"}}
 var posts = []*models.Post{{ID: "1", Title: "Aba", Content: "CHTOTO", Author: users[0], Comments: nil}}
 
 // SignUp is the resolver for the signUp field.

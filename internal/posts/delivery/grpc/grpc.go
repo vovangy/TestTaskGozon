@@ -67,8 +67,36 @@ func (h *PostsServerHandler) GetPostById(ctx context.Context, req *genPosts.GetP
 
 	var comments []*genPosts.Comment
 
-	for _, val := range post.Comments {
-		comments = append(comments, &genPosts.Comment{CommentId: val.Comment.CommentId, UserId: val.Comment.UserId, PostId: val.Comment.PostId, Content: val.Comment.Content, Comments: comments})
+	type StackItem struct {
+		Node       *models.CommentTree
+		ParentNode *genPosts.Comment
+	}
+
+	for i := 0; i < len(post.Comments); i++ {
+		stack := []StackItem{{Node: post.Comments[i], ParentNode: nil}}
+
+		for len(stack) > 0 {
+			current := stack[len(stack)-1]
+			stack = stack[:len(stack)-1]
+
+			convertedComment := &genPosts.Comment{
+				CommentId: current.Node.Comment.CommentId,
+				UserId:    current.Node.Comment.UserId,
+				PostId:    current.Node.Comment.PostId,
+				Content:   current.Node.Comment.Content,
+				Comments:  []*genPosts.Comment{},
+			}
+
+			if current.ParentNode == nil {
+				comments = append(comments, convertedComment)
+			} else {
+				current.ParentNode.Comments = append(current.ParentNode.Comments, convertedComment)
+			}
+
+			for i := len(current.Node.Replies) - 1; i >= 0; i-- {
+				stack = append(stack, StackItem{Node: current.Node.Replies[i], ParentNode: convertedComment})
+			}
+		}
 	}
 
 	slog.Info("Success getting post Grpc")
